@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Euro Club Cup Sim 2026/27</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF1EE; --surface:#FFFFFF; --sunk:#E3E9E5; --ink:#14213D; --muted:#5A6577; --line:#D3DCD6;
+  --pitch:#1F7A4D; --pitch-ink:#FFFFFF; --gold:#A87F12; --gold-tint:#E9C34A; --amber:#C07613; --red:#B23A3A;
+  --zone-top:#1F7A4D; --zone-po:#C9A13B; --zone-out:#A9B3AE;
+  color-scheme: light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1613; --surface:#15201B; --sunk:#1B2822; --ink:#E4ECE7; --muted:#93A39B; --line:#26352E;
+    --pitch:#4DBB82; --pitch-ink:#0B1410; --gold:#E2BC4A; --gold-tint:#E2BC4A; --amber:#E0A04A; --red:#E07272;
+    --zone-top:#4DBB82; --zone-po:#D6B04E; --zone-out:#4A5852;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1613; --surface:#15201B; --sunk:#1B2822; --ink:#E4ECE7; --muted:#93A39B; --line:#26352E;
+  --pitch:#4DBB82; --pitch-ink:#0B1410; --gold:#E2BC4A; --gold-tint:#E2BC4A; --amber:#E0A04A; --red:#E07272;
+  --zone-top:#4DBB82; --zone-po:#D6B04E; --zone-out:#4A5852;
+  color-scheme: dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%; scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0; min-height:100%; background:var(--bg); color:var(--ink);
+  font:16px/1.5 Barlow, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; -webkit-text-size-adjust:100%}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:10; background:var(--bg)}
+button,select,input,textarea{font:inherit; color:inherit}
+:focus-visible{outline:2px solid var(--pitch); outline-offset:2px}
+.wrap{max-width:1120px; margin:0 auto; padding:0 16px}
+.cond{font-family:"Barlow Condensed", "Arial Narrow", Barlow, sans-serif}
+
+header.top{padding:22px 0 10px}
+header.top h1{font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-weight:700; font-size:clamp(30px,6vw,46px); line-height:1; margin:0; letter-spacing:-.01em}
+header.top h1 small{font-weight:500; color:var(--muted); font-size:.55em; margin-left:.35em; letter-spacing:0}
+.status{color:var(--muted); margin:6px 0 0; font-size:15px; min-height:1.5em}
+.progress{height:3px; background:var(--sunk); border-radius:2px; overflow:hidden; margin-top:10px}
+.progress i{display:block; height:100%; width:0; background:var(--pitch); transition:width .15s linear}
+
+nav.tabs{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--bg); padding:8px 0; border-bottom:1px solid var(--line)}
+nav.tabs .wrap{display:flex; gap:4px; overflow-x:auto; scrollbar-width:none}
+nav.tabs .wrap::-webkit-scrollbar{display:none}
+.tab{border:0; background:none; padding:8px 14px; border-radius:999px; font-weight:600; color:var(--muted); cursor:pointer; white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--ink); color:var(--bg)}
+
+main{padding:18px 0 48px}
+.view[hidden]{display:none}
+h2{font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-weight:600; font-size:26px; line-height:1.15; margin:0 0 4px}
+.lede{color:var(--muted); margin:0 0 14px; max-width:68ch}
+.row{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 12px}
+.chip{white-space:nowrap; flex:none; border:1px solid var(--line); background:var(--surface); padding:5px 12px; border-radius:999px; cursor:pointer; font-size:14px; font-weight:500}
+.chip[aria-pressed="true"]{border-color:var(--ink); background:var(--ink); color:var(--bg)}
+.btn{border:0; background:var(--pitch); color:var(--pitch-ink); padding:10px 18px; border-radius:10px; font-weight:600; cursor:pointer}
+.btn.ghost{background:var(--surface); color:var(--ink); border:1px solid var(--line)}
+.btn:disabled{opacity:.5; cursor:default}
+
+/* favourites strip */
+.favs{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin:0 0 18px}
+.fav{background:var(--surface); border-radius:12px; padding:12px 14px; border-left:4px solid var(--c)}
+.fav b{display:block; font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-size:32px; line-height:1; font-weight:700}
+.fav span{color:var(--muted); font-size:14px}
+
+/* tables */
+.scroll{overflow-x:auto; background:var(--surface); border-radius:12px; -webkit-overflow-scrolling:touch}
+table{border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px; text-align:right; white-space:nowrap}
+th{font-weight:600; color:var(--muted); font-size:13px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--surface)}
+td{border-bottom:1px solid var(--line); font-size:15px}
+tr:last-child td{border-bottom:0}
+th.l,td.l{text-align:left}
+td.team, th.team{position:sticky; left:0; background:var(--surface); z-index:1; text-align:left}
+th.team{z-index:2}
+.tn{display:inline-flex; align-items:center; gap:8px; font-weight:600}
+.dot{width:10px; height:10px; border-radius:3px; background:var(--c); flex:none}
+.pos{color:var(--muted); width:2.2em; display:inline-block}
+td.heat{background:color-mix(in srgb, var(--pitch) calc(var(--p) * 0.62%), transparent)}
+td.heat.win{background:color-mix(in srgb, var(--gold-tint) calc(var(--p) * 1.6%), transparent); font-weight:600}
+td.faint{color:var(--muted)}
+.zone td.team{box-shadow:inset 4px 0 0 var(--z)}
+.full-only{display:none}
+@media (min-width:760px){ .full-only{display:table-cell} }
+.pill{display:inline-block; width:20px; height:20px; line-height:20px; text-align:center; border-radius:5px; font-size:12px; font-weight:600; margin-left:2px; color:#fff}
+.pill.W{background:#2E8B57} .pill.D{background:#8A949B} .pill.L{background:#B5473F}
+.legend{display:flex; gap:16px; flex-wrap:wrap; color:var(--muted); font-size:14px; margin:10px 2px 0}
+.legend i{display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px; background:var(--z)}
+
+/* fixtures */
+.mds{display:flex; gap:4px; overflow-x:auto; margin:0 0 12px; scrollbar-width:none}
+.mds::-webkit-scrollbar{display:none}
+.mds .chip{min-width:44px; text-align:center}
+.matches{display:grid; gap:8px; grid-template-columns:1fr}
+@media (min-width:760px){ .matches{grid-template-columns:1fr 1fr} }
+.match{background:var(--surface); border-radius:12px; padding:10px 12px; display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:center}
+.match .h{justify-self:end; text-align:right} .match .a{justify-self:start}
+.match .tn{font-weight:600}
+.score{font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-size:24px; font-weight:700; min-width:64px; text-align:center}
+.odds{grid-column:1/-1; display:flex; height:22px; border-radius:6px; overflow:hidden; font-size:12px; font-weight:600}
+.odds span{display:flex; align-items:center; justify-content:center; min-width:0; overflow:hidden}
+.odds .oh{background:var(--pitch); color:var(--pitch-ink)} .odds .od{background:var(--sunk); color:var(--muted)} .odds .oa{background:var(--ink); color:var(--bg)}
+.likely{grid-column:1/-1; color:var(--muted); font-size:13px; text-align:center; margin-top:-4px}
+
+/* bracket */
+.rounds-tabs{display:flex; gap:4px; overflow-x:auto; margin-bottom:12px}
+.bracket{display:block}
+.round{display:none}
+.round.on{display:grid; gap:8px}
+@media (min-width:1000px){
+  .rounds-tabs{display:none}
+  .bracket{display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:12px; align-items:start}
+  .round{display:grid !important; gap:8px; align-content:space-around; min-height:100%}
+  .round h3{display:block}
+}
+.round h3{display:none; font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-size:18px; font-weight:600; margin:0 0 2px; color:var(--muted)}
+.tie{background:var(--surface); border-radius:10px; padding:8px 10px; font-size:14px}
+.tie .ln{display:flex; justify-content:space-between; gap:8px; align-items:center}
+.tie .ln.w{font-weight:700}
+.tie .ln.lose{color:var(--muted)}
+.tie .note{color:var(--muted); font-size:12px}
+.champion{background:var(--surface); border-radius:12px; padding:16px; margin:0 0 16px; border-left:6px solid var(--c); display:flex; gap:14px; align-items:baseline; flex-wrap:wrap}
+.champion b{font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-size:36px; line-height:1}
+.champion span{color:var(--muted)}
+.empty{background:var(--surface); border-radius:12px; padding:28px 20px; text-align:center}
+.empty p{color:var(--muted); margin:0 0 14px}
+
+/* update */
+.panel{background:var(--surface); border-radius:12px; padding:16px; margin:0 0 16px}
+.panel h3{font-family:"Barlow Condensed","Arial Narrow",sans-serif; font-size:21px; font-weight:600; margin:0 0 4px}
+.panel p.help{color:var(--muted); margin:0 0 12px; font-size:15px; max-width:68ch}
+textarea{width:100%; min-height:140px; border:1px solid var(--line); border-radius:10px; background:var(--bg); padding:10px; resize:vertical; font-size:15px}
+.preview{list-style:none; padding:0; margin:12px 0; display:grid; gap:4px; font-size:14px}
+.preview li{padding:6px 10px; border-radius:8px; background:var(--bg)}
+.preview li.bad{color:var(--red)}
+.preview li .md{color:var(--muted); margin-right:6px}
+.forms{display:grid; gap:6px; grid-template-columns:1fr}
+@media (min-width:860px){ .forms{grid-template-columns:1fr 1fr} }
+.frow{display:flex; justify-content:space-between; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid var(--line)}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; flex:none}
+.seg button{border:0; background:none; padding:5px 8px; font-size:13px; cursor:pointer; color:var(--muted); min-width:44px}
+.seg button[aria-pressed="true"]{background:var(--ink); color:var(--bg); font-weight:600}
+.sl{display:grid; grid-template-columns:1fr; gap:4px; margin:0 0 14px}
+.sl label{display:flex; justify-content:space-between; font-weight:500}
+.sl label output{color:var(--muted); font-variant-numeric:tabular-nums}
+.sl small{color:var(--muted)}
+input[type=range]{width:100%; accent-color:var(--pitch)}
+select{border:1px solid var(--line); border-radius:8px; background:var(--bg); padding:6px 10px}
+.toast{position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); background:var(--ink); color:var(--bg); padding:10px 16px; border-radius:10px; font-weight:500; z-index:20; max-width:90vw}
+details.how{background:var(--surface); border-radius:12px; padding:12px 16px; margin-top:16px}
+details.how summary{cursor:pointer; font-weight:600}
+details.how p{color:var(--muted); max-width:70ch; margin:8px 0 0}
+.strength{color:var(--muted); font-size:13px}
+@media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <h1>Euro Club Cup Sim<small>2026/27</small></h1>
+  <p class="status" id="status">Loading…</p>
+  <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+</div></header>
+<nav class="tabs" aria-label="Sections"><div class="wrap" role="tablist">
+  <button class="tab" role="tab" data-view="odds" aria-selected="true">Odds</button>
+  <button class="tab" role="tab" data-view="table" aria-selected="false">Table</button>
+  <button class="tab" role="tab" data-view="fixtures" aria-selected="false">Fixtures</button>
+  <button class="tab" role="tab" data-view="season" aria-selected="false">Sim a season</button>
+  <button class="tab" role="tab" data-view="update" aria-selected="false">Update</button>
+</div></nav>
+<main class="wrap">
+  <section class="view" id="v-odds"></section>
+  <section class="view" id="v-table" hidden></section>
+  <section class="view" id="v-fixtures" hidden></section>
+  <section class="view" id="v-season" hidden></section>
+  <section class="view" id="v-update" hidden></section>
+</main>
+<script id="saved-state" type="application/json">{"results":{"1-AEK-LAS":[1,0],"1-BRU-AVL":[2,3],"1-BVB-VIL":[3,2],"1-POR-MCI":[0,2],"1-LIL-BET":[2,3],"1-RMA-INT":[2,1],"1-BAR-FEY":[5,1],"1-STU-VIK":[3,1],"1-LIV-ATM":[2,1],"1-PSG-SLO":[6,1],"1-SCP-GAL":[3,1],"1-NAP-ARS":[0,1],"1-FEN-ROM":[1,1],"1-PSV-SHA":[1,1],"1-COM-RBL":[4,1],"1-BAY-BOD":[5,0],"1-MUN-SAB":[4,0],"1-SLA-RCL":[2,3],"2-RCL-SCP":[0,2],"2-SAB-SLA":[2,0],"2-ARS-LIL":[3,0],"2-ATM-MUN":[2,0],"2-INT-BRU":[3,4],"2-GAL-BAR":[1,4],"2-RBL-PSV":[1,0],"2-VIK-BAY":[3,3],"2-VIL-NAP":[3,1],"2-FEY-COM":[3,2],"2-LAS-LIV":[3,6],"2-ROM-RMA":[3,4],"2-AVL-FEN":[6,0],"2-SHA-AEK":[3,1],"2-BOD-BVB":[1,0],"2-MCI-PSG":[2,4],"2-BET-POR":[3,2],"2-SLO-STU":[0,3]},"form":{"ARS":1,"MCI":1,"AVL":-1,"MUN":-1},"updated":"2026-10-16T00:00:00.000Z"}</script>
+<script>
+// ---------- Teams: id, full name, short name, colour, baseline strength (Elo-style) ----------
+const TEAMS = [
+  ['ARS','Arsenal','Arsenal','#DB0007',2020],
+  ['AVL','Aston Villa','Villa','#7A003C',1860],
+  ['ATM','Atlético de Madrid','Atlético','#CB3524',1890],
+  ['BAR','Barcelona','Barcelona','#A50044',1990],
+  ['BAY','Bayern München','Bayern','#DC052D',1990],
+  ['BVB','Borussia Dortmund','Dortmund','#E5B800',1850],
+  ['BOD','Bodø/Glimt','Bodø/Glimt','#E8C400',1730],
+  ['BRU','Club Brugge','Brugge','#0E3C8A',1760],
+  ['COM','Como','Como','#1B4E9B',1790],
+  ['FEN','Fenerbahçe','Fenerbahçe','#163962',1760],
+  ['FEY','Feyenoord','Feyenoord','#C8102E',1750],
+  ['GAL','Galatasaray','Galatasaray','#A90432',1770],
+  ['INT','Inter','Inter','#0068A8',1930],
+  ['LAS','LASK','LASK','#3A3A3A',1630],
+  ['LIL','Lille','Lille','#C8102E',1780],
+  ['LIV','Liverpool','Liverpool','#C8102E',1960],
+  ['MCI','Manchester City','Man City','#6CABDD',1960],
+  ['MUN','Manchester United','Man Utd','#DA291C',1830],
+  ['NAP','Napoli','Napoli','#1F8FD8',1860],
+  ['PSG','Paris Saint-Germain','PSG','#004170',2030],
+  ['PSV','PSV Eindhoven','PSV','#E30613',1790],
+  ['RBL','RB Leipzig','Leipzig','#DD0741',1800],
+  ['RCL','Lens','Lens','#E5B100',1770],
+  ['BET','Real Betis','Betis','#00954C',1790],
+  ['RMA','Real Madrid','Real Madrid','#9C8A4E',1980],
+  ['ROM','Roma','Roma','#8E1F2F',1820],
+  ['SAB','Sabah','Sabah','#1D5C9E',1580],
+  ['SCP','Sporting CP','Sporting','#008057',1830],
+  ['SHA','Shakhtar Donetsk','Shakhtar','#F28A00',1700],
+  ['SLA','Slavia Praha','Slavia','#C8102E',1700],
+  ['SLO','Slovan Bratislava','Slovan','#2A6EBB',1600],
+  ['STU','Stuttgart','Stuttgart','#E32219',1800],
+  ['VIK','Viking','Viking','#00539F',1640],
+  ['VIL','Villarreal','Villarreal','#E0C100',1810],
+  ['AEK','AEK Athens','AEK','#B8930C',1680],
+  ['POR','Porto','Porto','#00428C',1800],
+].map(([id,name,short,color,r]) => ({id,name,short,color,r}));
+const TEAM = Object.fromEntries(TEAMS.map(t => [t.id, t]));
+
+// ---------- Fixtures, matchday by matchday (home first) ----------
+const MDS = [
+  'AEK-LAS BRU-AVL BVB-VIL POR-MCI LIL-BET RMA-INT BAR-FEY STU-VIK LIV-ATM PSG-SLO SCP-GAL NAP-ARS FEN-ROM PSV-SHA COM-RBL BAY-BOD MUN-SAB SLA-RCL',
+  'RCL-SCP SAB-SLA ARS-LIL ATM-MUN INT-BRU GAL-BAR RBL-PSV VIK-BAY VIL-NAP FEY-COM LAS-LIV ROM-RMA AVL-FEN SHA-AEK BOD-BVB MCI-PSG BET-POR SLO-STU',
+  'FEN-SLA SAB-BVB ROM-SLO POR-PSV LIV-VIL MCI-AEK PSG-BAR NAP-BOD STU-ATM COM-MUN LIL-GAL AVL-VIK BRU-RCL BAY-ARS INT-SHA RMA-RBL BET-FEY SCP-LAS',
+  'SHA-SCP GAL-STU ATM-BAY BAR-AVL FEY-INT BOD-LIL LAS-SLO MUN-ROM VIL-PSG AEK-RMA FEN-LIV BVB-BET POR-NAP PSV-BRU RBL-MCI RCL-COM SLA-ARS VIK-SAB',
+  'BOD-LAS GAL-AVL ARS-BVB COM-AEK FEY-POR MCI-NAP RBL-RCL RMA-PSV SLO-BET SAB-BAR SLA-VIL ATM-VIK BRU-LIV INT-STU SHA-FEN LIL-BAY PSG-ROM SCP-MUN',
+  'VIK-FEY VIL-SAB AEK-GAL ROM-SCP AVL-PSG BAR-MCI BAY-SLA MUN-RBL NAP-BRU BET-COM SLO-SHA ARS-RMA BVB-INT LAS-FEN LIV-POR RCL-BOD PSV-ATM STU-LIL',
+  'BOD-ATM GAL-FEY AEK-ROM AVL-BVB INT-LIV POR-SLA LIL-SLO RMA-LAS STU-BRU FEN-VIL SAB-NAP COM-PSG MUN-BAY RBL-SHA RCL-MCI BET-ARS SCP-BAR VIK-PSV',
+  'ARS-SAB ROM-LIL ATM-FEN BVB-AEK BRU-BOD BAY-BET BAR-COM SHA-RMA FEY-RBL LAS-POR LIV-RCL MCI-SCP PSG-GAL PSV-STU SLA-AVL NAP-VIK VIL-MUN SLO-INT',
+];
+const FIX = [];
+MDS.forEach((line, i) => line.split(' ').forEach(p => {
+  const [h, a] = p.split('-');
+  FIX.push({md: i + 1, h, a, k: `${i + 1}-${h}-${a}`});
+}));
+
+// ---------- Team-name matching for pasted results ----------
+const ALIASES = {
+  ARS:'arsenal', AVL:'astonvilla villa', ATM:'atleticodemadrid atleticomadrid atleti atletico',
+  BAR:'barcelona barca fcbarcelona', BAY:'bayernmunchen bayernmunich bayern fcbayern fcbayernmunchen',
+  BVB:'borussiadortmund dortmund bdortmund bvb', BOD:'bodoglimt bodo', BRU:'clubbrugge brugge',
+  COM:'como como1907', FEN:'fenerbahce', FEY:'feyenoord', GAL:'galatasaray',
+  INT:'inter intermilan internazionale', LAS:'lask lasklinz', LIL:'lille losclille', LIV:'liverpool',
+  MCI:'manchestercity mancity', MUN:'manchesterunited manutd manunited manchesterutd',
+  NAP:'napoli sscnapoli', PSG:'parissaintgermain paris psg parissg', PSV:'psveindhoven psv',
+  RBL:'rbleipzig leipzig', RCL:'lens rclens', BET:'realbetis betis', RMA:'realmadrid',
+  ROM:'roma asroma', SAB:'sabah sabahfk', SCP:'sportingcp sporting sportinglisbon',
+  SHA:'shakhtardonetsk shakhtar shaktar', SLA:'slaviapraha slaviaprague slavia',
+  SLO:'slovanbratislava slovan sbratislava', STU:'stuttgart vfbstuttgart', VIK:'viking vikingfk',
+  VIL:'villarreal', AEK:'aekathens aek paeaek', POR:'porto fcporto',
+};
+const ALIAS = {};
+for (const [id, s] of Object.entries(ALIASES)) s.split(' ').forEach(a => ALIAS[a] = id);
+function norm(s) {
+  return s.toLowerCase().replace(/ø/g,'o').replace(/æ/g,'ae').replace(/ß/g,'ss')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+}
+function findTeam(s) { return ALIAS[norm(s)] || null; }
+
+function parseResults(text, results) {
+  const out = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = line.match(/^(.+?)\s+(\d{1,2})\s*[-–—:]\s*(\d{1,2})\s+(.+?)$/);
+    if (!m) { out.push({line, ok:false, why:'No score found. Use the form "Liverpool 2-1 Villarreal".'}); continue; }
+    const h = findTeam(m[1]), a = findTeam(m[4]);
+    if (!h || !a) { out.push({line, ok:false, why:`Team not recognised: ${!h ? m[1] : m[4]}`}); continue; }
+    const f = FIX.find(x => x.h === h && x.a === a);
+    if (!f) {
+      const rev = FIX.find(x => x.h === a && x.a === h);
+      out.push({line, ok:false, why: rev ? `In the fixture list this is ${TEAM[a].name} at home. Check the order.` : 'These teams do not play each other.'});
+      continue;
+    }
+    const prev = results[f.k];
+    out.push({line, ok:true, f, hg:+m[2], ag:+m[3], prev});
+  }
+  return out;
+}
+
+// ---------- Model ----------
+const G = 2.95;          // average goals per game in this competition
+const C = 0.19;          // goal-ratio sensitivity per 100 strength points
+const GOAL_PTS = 100 / (G * C); // strength points worth one goal of supremacy
+const SHRINK = 6;        // games of evidence before CL results carry half weight
+const FORM_STEP = 25;    // strength points per domestic-form step
+const DEFAULT_SET = {clW:1, formW:1, hfa:55, noise:45, sims:10000};
+
+const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+function lambdas(sh, sa, neutral, set) {
+  const d = sh - sa + (neutral ? 0 : set.hfa);
+  return [G / 2 * Math.exp(C * d / 100), G / 2 * Math.exp(-C * d / 100)];
+}
+function pois(l) { const L = Math.exp(-l); let k = 0, p = 1; do { k++; p *= Math.random(); } while (p > L); return k - 1; }
+function gauss() { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+function computeStrengths(st, set) {
+  const base = {}, s = {}, adj = {}, n = {};
+  for (const t of TEAMS) { base[t.id] = t.r + (st.form[t.id] || 0) * FORM_STEP * set.formW; s[t.id] = base[t.id]; adj[t.id] = 0; }
+  const played = FIX.filter(f => st.results[f.k]);
+  for (let it = 0; it < 4; it++) {
+    const sum = {}; for (const t of TEAMS) { sum[t.id] = 0; n[t.id] = 0; }
+    for (const f of played) {
+      const [hg, ag] = st.results[f.k];
+      // each side judged against the opponent's current rating (opponent-strength weighting)
+      const [lh1, la1] = lambdas(base[f.h], s[f.a], false, set);
+      const [lh2, la2] = lambdas(s[f.h], base[f.a], false, set);
+      sum[f.h] += clamp((hg - ag) - (lh1 - la1), -3, 3); n[f.h]++;
+      sum[f.a] += clamp((ag - hg) - (la2 - lh2), -3, 3); n[f.a]++;
+    }
+    for (const t of TEAMS) {
+      const k = n[t.id];
+      adj[t.id] = k ? clamp(k / (k + SHRINK) * (sum[t.id] / k) * GOAL_PTS * set.clW, -160, 160) : 0;
+      s[t.id] = base[t.id] + adj[t.id];
+    }
+  }
+  return {s, base, adj};
+}
+
+function matchProbs(sh, sa, set) {
+  const [lh, la] = lambdas(sh, sa, false, set);
+  const ph = [], pa = [];
+  let fh = Math.exp(-lh), fa = Math.exp(-la);
+  for (let i = 0; i <= 10; i++) { ph.push(fh); pa.push(fa); fh *= lh / (i + 1); fa *= la / (i + 1); }
+  let H = 0, D = 0, A = 0, best = [0, 0], bp = 0;
+  for (let i = 0; i <= 10; i++) for (let j = 0; j <= 10; j++) {
+    const p = ph[i] * pa[j];
+    if (i > j) H += p; else if (i === j) D += p; else A += p;
+    if (p > bp) { bp = p; best = [i, j]; }
+  }
+  const T = H + D + A;
+  return {H: H / T, D: D / T, A: A / T, best};
+}
+
+function emptyRow(id) { return {id, p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0, agf:0, aw:0, form:[]}; }
+function addResult(tab, h, a, hg, ag) {
+  const H = tab[h], A = tab[a];
+  H.p++; A.p++; H.gf += hg; H.ga += ag; A.gf += ag; A.ga += hg; A.agf += ag;
+  if (hg > ag) { H.w++; A.l++; H.pts += 3; H.form.push('W'); A.form.push('L'); }
+  else if (hg < ag) { A.w++; H.l++; A.pts += 3; A.aw++; A.form.push('W'); H.form.push('L'); }
+  else { H.d++; A.d++; H.pts++; A.pts++; H.form.push('D'); A.form.push('D'); }
+}
+function buildTable(results) {
+  const tab = {}; for (const t of TEAMS) tab[t.id] = emptyRow(t.id);
+  for (const f of FIX) { const r = results[f.k]; if (r) addResult(tab, f.h, f.a, r[0], r[1]); }
+  return tab;
+}
+function rankTable(tab, random) {
+  const rows = Object.values(tab);
+  if (random) rows.forEach(r => r.rnd = Math.random());
+  rows.sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf || b.agf - a.agf || b.w - a.w || b.aw - a.aw ||
+    (random ? a.rnd - b.rnd : TEAM[a.id].name.localeCompare(TEAM[b.id].name)));
+  return rows;
+}
+
+// ---------- Season simulation ----------
+function play(ns, h, a, neutral, set) { const [lh, la] = lambdas(ns[h], ns[a], neutral, set); return [pois(lh), pois(la)]; }
+function shuffle2(a) { return Math.random() < 0.5 ? a : [a[1], a[0]]; }
+
+// Two legs: `first` hosts leg 1, `second` hosts leg 2 (and extra time).
+function twoLeg(ns, first, second, set) {
+  const [a1, b1] = play(ns, first, second, false, set);
+  const [b2, a2] = play(ns, second, first, false, set);
+  let fa = a1 + a2, sa = b1 + b2, et = false, pens = null;
+  if (fa === sa) {
+    et = true;
+    const [lh, la] = lambdas(ns[second], ns[first], false, set);
+    const e2 = pois(lh / 3), e1 = pois(la / 3); sa += e2; fa += e1;
+    if (fa === sa) pens = Math.random() < 0.5 ? first : second;
+  }
+  const w = pens || (fa > sa ? first : second);
+  return {first, second, fa, sa, et, pens, w, legs:[[a1, b1], [b2, a2]]};
+}
+function single(ns, x, y, set) {
+  let [gx, gy] = play(ns, x, y, true, set), et = false, pens = null;
+  if (gx === gy) {
+    et = true;
+    const [lx, ly] = lambdas(ns[x], ns[y], true, set);
+    gx += pois(lx / 3); gy += pois(ly / 3);
+    if (gx === gy) pens = Math.random() < 0.5 ? x : y;
+  }
+  return {first:x, second:y, fa:gx, sa:gy, et, pens, w: pens || (gx > gy ? x : y)};
+}
+
+function simSeason(S, baseTab, unplayed, set, detail) {
+  const ns = {}; for (const t of TEAMS) ns[t.id] = S[t.id] + gauss() * set.noise;
+  const tab = {}; for (const id in baseTab) { const r = baseTab[id]; tab[id] = {...r, form: detail ? [...r.form] : r.form}; }
+  for (const f of unplayed) {
+    const [hg, ag] = play(ns, f.h, f.a, false, set);
+    if (detail) addResult(tab, f.h, f.a, hg, ag);
+    else {
+      const H = tab[f.h], A = tab[f.a]; H.gf += hg; H.ga += ag; A.gf += ag; A.ga += hg; A.agf += ag;
+      if (hg > ag) { H.w++; H.pts += 3; } else if (hg < ag) { A.w++; A.aw++; A.pts += 3; } else { H.pts++; A.pts++; }
+    }
+  }
+  const rows = rankTable(tab, true);
+  const R = k => rows[k - 1].id;            // team at rank k
+  // Knockout play-offs (9-24). Seeded side hosts the second leg.
+  const groups = [[[9,10],[23,24]], [[11,12],[21,22]], [[13,14],[19,20]], [[15,16],[17,18]]];
+  const poTies = [], poWinners = [];
+  for (const [[s1, s2], unseeded] of groups) {
+    const [u1, u2] = shuffle2(unseeded);
+    const t1 = twoLeg(ns, R(u1), R(s1), set), t2 = twoLeg(ns, R(u2), R(s2), set);
+    poTies.push(t1, t2); poWinners.push([t1.w, t2.w]);
+  }
+  // Round of 16: seeds 7/8 meet the 9/10 group winners, 5/6 the 11/12 group, 3/4 the 13/14 group, 1/2 the 15/16 group.
+  const seedPairs = [[7,8],[5,6],[3,4],[1,2]];
+  const halfA = {}, halfB = {};
+  const r16 = [];
+  seedPairs.forEach(([x, y], g) => {
+    const [sa, sb] = shuffle2([R(x), R(y)]);
+    const [wa, wb] = shuffle2(poWinners[g]);
+    const ta = twoLeg(ns, wa, sa, set), tb = twoLeg(ns, wb, sb, set);
+    r16.push(ta, tb); halfA[g] = ta.w; halfB[g] = tb.w;
+  });
+  // Quarter-finals: (1/2 path v 7/8 path) and (3/4 path v 5/6 path), in each half. Draw decides home order.
+  const qf = [], sfIn = [];
+  for (const half of [halfA, halfB]) {
+    const pair = [];
+    for (const [g1, g2] of [[3, 0], [2, 1]]) {
+      const [x, y] = shuffle2([half[g1], half[g2]]);
+      const t = twoLeg(ns, x, y, set); qf.push(t); pair.push(t.w);
+    }
+    sfIn.push(pair);
+  }
+  const sf = sfIn.map(p => { const [x, y] = shuffle2(p); return twoLeg(ns, x, y, set); });
+  const fin = single(ns, sf[0].w, sf[1].w, set);
+  return {rows, poTies, r16, qf, sf, fin};
+}
+
+function newCounts() {
+  const c = {}; for (const t of TEAMS) c[t.id] = {top8:0, po:0, out:0, r16:0, qf:0, sf:0, fin:0, win:0, pts:0, pos:0};
+  return c;
+}
+function tally(c, res) {
+  res.rows.forEach((r, i) => {
+    const x = c[r.id]; x.pts += r.pts; x.pos += i + 1;
+    if (i < 8) x.top8++; else if (i < 24) x.po++; else x.out++;
+  });
+  for (const t of res.r16) { c[t.first].r16++; c[t.second].r16++; }
+  for (const t of res.qf) { c[t.first].qf++; c[t.second].qf++; }
+  for (const t of res.sf) { c[t.first].sf++; c[t.second].sf++; }
+  c[res.fin.first].fin++; c[res.fin.second].fin++; c[res.fin.w].win++;
+}
+
+if (typeof module !== 'undefined' && module.exports) module.exports = {TEAMS, TEAM, FIX, parseResults, computeStrengths, matchProbs, buildTable, rankTable, simSeason, newCounts, tally, DEFAULT_SET, lambdas};
+
+</script>
+<script>
+// Capture the untouched page first, so saved updates can be written back into it.
+const TEMPLATE = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+const LS_STATE = 'eccs-state-v1', LS_SET = 'eccs-settings-v1';
+const $ = s => document.querySelector(s);
+const pct = (x, n) => n ? x / n * 100 : 0;
+const fmt = p => p >= 99.5 ? '>99' : p > 0 && p < 0.5 ? '<1' : Math.round(p).toString();
+const teamCell = id => `<span class="tn" style="--c:${TEAM[id].color}"><i class="dot"></i>${TEAM[id].name}</span>`;
+const teamShort = id => `<span class="tn" style="--c:${TEAM[id].color}"><i class="dot"></i>${TEAM[id].short}</span>`;
+const FORM_LABELS = [['-2','Poor'],['-1','Below'],['0','Normal'],['1','Good'],['2','Hot']];
+
+let embedded = {results:{}, form:{}, updated:''};
+try { embedded = JSON.parse(document.getElementById('saved-state').textContent); } catch (e) {}
+let state = embedded;
+try {
+  const local = JSON.parse(localStorage.getItem(LS_STATE) || 'null');
+  if (local && local.updated && local.updated > (embedded.updated || '')) state = local;
+} catch (e) {}
+let settings = {...DEFAULT_SET};
+try { Object.assign(settings, JSON.parse(localStorage.getItem(LS_SET) || '{}')); } catch (e) {}
+
+let saveMode = 'local';      // 'shared' when the owner can republish this page
+let artifactApi = null;
+let counts = null, simsDone = 0, runId = 0, strengths = null, lastSeason = null;
+let oddsSort = 'win', fixMd = null, roundTab = 0, pending = null, formDraft = null;
+
+// ---------- helpers ----------
+function playedCount() { return FIX.filter(f => state.results[f.k]).length; }
+function lastCompleteMd() {
+  let md = 0;
+  for (let m = 1; m <= 8; m++) if (FIX.filter(f => f.md === m).every(f => state.results[f.k])) md = m; else break;
+  return md;
+}
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3200);
+}
+function setStatus(extra) {
+  const md = lastCompleteMd(), n = playedCount();
+  const where = n === 0 ? 'Before matchday 1' : md === 8 ? 'League phase complete' :
+    `After matchday ${md} of 8` + (n > md * 18 ? ` (plus ${n - md * 18} matchday ${md + 1} results)` : '');
+  $('#status').textContent = `${where}. ${extra || ''}`;
+}
+
+// ---------- simulation runner ----------
+function runSims() {
+  const my = ++runId;
+  strengths = computeStrengths(state, settings).s;
+  const baseTab = buildTable(state.results);
+  const unplayed = FIX.filter(f => !state.results[f.k]);
+  const N = settings.sims;
+  counts = newCounts(); simsDone = 0;
+  const step = () => {
+    if (my !== runId) return;
+    const end = Math.min(N, simsDone + 400);
+    for (; simsDone < end; simsDone++) tally(counts, simSeason(strengths, baseTab, unplayed, settings, false));
+    $('#bar').style.width = (simsDone / N * 100) + '%';
+    if (simsDone < N) { setStatus(`Simulating ${simsDone.toLocaleString()} of ${N.toLocaleString()} seasons…`); setTimeout(step, 0); }
+    else { setStatus(`${N.toLocaleString()} simulated seasons.`); setTimeout(() => $('#bar').style.width = '0', 600); renderOdds(); renderFixtures(); }
+  };
+  renderFixtures();
+  step();
+}
+
+// ---------- Odds view ----------
+function renderOdds() {
+  const v = $('#v-odds');
+  if (!counts || simsDone < settings.sims) { v.innerHTML = '<div class="empty"><p>Running the simulations…</p></div>'; return; }
+  const N = simsDone, tab = buildTable(state.results);
+  const real = rankTable(buildTable(state.results), false).map(r => r.id);
+  const ids = TEAMS.map(t => t.id);
+  const key = {win: id => counts[id].win * 1e6 + counts[id].fin, top8: id => counts[id].top8 * 1e6 - counts[id].pos, pos: id => -counts[id].pos, table: id => -real.indexOf(id)}[oddsSort];
+  ids.sort((a, b) => key(b) - key(a));
+  const fav = [...TEAMS].sort((a, b) => counts[b.id].win - counts[a.id].win).slice(0, 4);
+  const cell = (x, cls = '') => { const p = pct(x, N); return `<td class="heat ${cls}" style="--p:${p.toFixed(1)}">${fmt(p)}</td>`; };
+  const rows = ids.map((id, i) => {
+    const c = counts[id], r = tab[id];
+    return `<tr><td class="team"><span class="pos">${i + 1}</span>${teamCell(id)}</td>
+      <td class="full-only">${r.pts}</td><td>${(c.pts / N).toFixed(1)}</td><td class="faint full-only">${(c.pos / N).toFixed(1)}</td>
+      ${cell(c.top8)}${cell(c.po)}<td class="faint">${fmt(pct(c.out, N))}</td>
+      ${cell(c.r16)}${cell(c.qf)}${cell(c.sf)}${cell(c.fin)}${cell(c.win, 'win')}</tr>`;
+  }).join('');
+  const sortChip = (k, label) => `<button class="chip" data-sort="${k}" aria-pressed="${oddsSort === k}">${label}</button>`;
+  v.innerHTML = `
+    <div class="favs">${fav.map(t => `<div class="fav" style="--c:${t.color}"><b>${fmt(pct(counts[t.id].win, N))}%</b><span>${t.name} to win it</span></div>`).join('')}</div>
+    <div class="row">${sortChip('win', 'By title odds')}${sortChip('top8', 'By top 8 odds')}${sortChip('pos', 'By predicted finish')}${sortChip('table', 'By current table')}</div>
+    <div class="scroll"><table>
+      <thead><tr><th class="team">Team</th><th class="full-only">Pts</th><th title="Expected final points">Exp pts</th><th class="full-only" title="Average league finish">Avg pos</th>
+      <th title="Finish 1st–8th">Top 8 %</th><th title="Finish 9th–24th">Play-off %</th><th title="Finish 25th–36th">Out %</th>
+      <th title="Reach the round of 16">R16 %</th><th title="Reach the quarter-finals">QF %</th><th title="Reach the semi-finals">SF %</th><th title="Reach the final">Final %</th><th>Win %</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+    <details class="how"><summary>How the odds are worked out</summary>
+      <p>Every club has a strength rating built from three things: a baseline for how good the club usually is, its domestic form this season, and its results in this competition so far. Those results are judged against the opponent, so beating a strong side counts for more than beating a weak one, and early results are held back until more games are played.</p>
+      <p>Each remaining match is played out with goals drawn at random from the two teams' expected scoring rates, with a home boost. Then the play-offs, round of 16, quarter-finals, semi-finals and a one-off final are played under the real format, with extra time and penalties. This whole season is repeated ${N.toLocaleString()} times, and the percentages show how often each thing happened.</p>
+      <p>To capture surprises, each club's strength wobbles a little in every simulated season. You can change how much each factor counts in Update.</p>
+    </details>`;
+  v.querySelectorAll('[data-sort]').forEach(b => b.onclick = () => { oddsSort = b.dataset.sort; renderOdds(); });
+}
+
+// ---------- Table view ----------
+function renderTable() {
+  const rows = rankTable(buildTable(state.results), false);
+  const zone = i => i < 8 ? 'var(--zone-top)' : i < 24 ? 'var(--zone-po)' : 'var(--zone-out)';
+  $('#v-table').innerHTML = `
+    <h2>League phase table</h2>
+    <p class="lede">The real standings from the results entered so far. Ties are split by goal difference, then goals scored, then away goals, then wins.</p>
+    <div class="scroll"><table>
+      <thead><tr><th class="team">Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th class="full-only">GF</th><th class="full-only">GA</th><th>GD</th><th>Pts</th><th class="l">Form</th></tr></thead>
+      <tbody>${rows.map((r, i) => `<tr class="zone" style="--z:${zone(i)}"><td class="team"><span class="pos">${i + 1}</span>${teamCell(r.id)}</td>
+        <td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td class="full-only">${r.gf}</td><td class="full-only">${r.ga}</td>
+        <td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td><b>${r.pts}</b></td>
+        <td class="l">${r.form.map(x => `<span class="pill ${x}">${x}</span>`).join('')}</td></tr>`).join('')}</tbody>
+    </table></div>
+    <div class="legend"><span style="--z:var(--zone-top)"><i></i>1–8: straight to round of 16</span><span style="--z:var(--zone-po)"><i></i>9–24: knockout play-offs</span><span style="--z:var(--zone-out)"><i></i>25–36: out</span></div>`;
+}
+
+// ---------- Fixtures view ----------
+function renderFixtures() {
+  if (fixMd === null) fixMd = Math.min(8, lastCompleteMd() + 1);
+  const S = strengths || computeStrengths(state, settings).s;
+  const list = FIX.filter(f => f.md === fixMd);
+  const dates = ['8–10 Sep','13–14 Oct','20–21 Oct','3–4 Nov','24–25 Nov','8–9 Dec','19–20 Jan','27 Jan'];
+  $('#v-fixtures').innerHTML = `
+    <h2>Matchday ${fixMd} <span class="strength">${dates[fixMd - 1]}</span></h2>
+    <p class="lede">Played games show the score. Upcoming games show the model's home win, draw and away win chances.</p>
+    <div class="mds">${[1,2,3,4,5,6,7,8].map(m => `<button class="chip" data-md="${m}" aria-pressed="${m === fixMd}">MD${m}</button>`).join('')}</div>
+    <div class="matches">${list.map(f => {
+      const r = state.results[f.k];
+      if (r) return `<div class="match"><div class="h">${teamShort(f.h)}</div><div class="score">${r[0]}–${r[1]}</div><div class="a">${teamShort(f.a)}</div></div>`;
+      const p = matchProbs(S[f.h], S[f.a], settings);
+      const seg = (cls, x) => `<span class="${cls}" style="width:${(x * 100).toFixed(1)}%">${x >= .12 ? Math.round(x * 100) + '%' : ''}</span>`;
+      return `<div class="match"><div class="h">${teamShort(f.h)}</div><div class="score faint">v</div><div class="a">${teamShort(f.a)}</div>
+        <div class="odds" role="img" aria-label="${TEAM[f.h].short} ${Math.round(p.H*100)}%, draw ${Math.round(p.D*100)}%, ${TEAM[f.a].short} ${Math.round(p.A*100)}%">${seg('oh', p.H)}${seg('od', p.D)}${seg('oa', p.A)}</div>
+        <div class="likely">Most likely score ${p.best[0]}–${p.best[1]}</div></div>`;
+    }).join('')}</div>`;
+  $('#v-fixtures').querySelectorAll('[data-md]').forEach(b => b.onclick = () => { fixMd = +b.dataset.md; renderFixtures(); });
+}
+
+// ---------- Sim a season view ----------
+function renderSeason() {
+  const v = $('#v-season');
+  if (!lastSeason) {
+    v.innerHTML = `<h2>Play out one season</h2><div class="empty"><p>See one possible way the rest of the competition could go, from the league phase to the final.</p><button class="btn" id="simone">Simulate a season</button></div>`;
+    $('#simone').onclick = simOne; return;
+  }
+  const s = lastSeason, champ = s.fin.w, runner = s.fin.w === s.fin.first ? s.fin.second : s.fin.first;
+  const tieHtml = t => {
+    // show "second" (hosted 2nd leg) as the seeded/first-listed line
+    const lines = [[t.second, t.sa], [t.first, t.fa]];
+    const note = t.pens ? `${TEAM[t.pens].short} win on penalties` : t.et ? 'After extra time' : '';
+    return `<div class="tie">${lines.map(([id, g]) => `<div class="ln ${id === t.w ? 'w' : 'lose'}">${teamShort(id)}<span>${g}</span></div>`).join('')}${note ? `<div class="note">${note}</div>` : ''}</div>`;
+  };
+  const rounds = [['Play-offs', s.poTies], ['Round of 16', s.r16], ['Quarter-finals', s.qf], ['Semi-finals', s.sf], ['Final', [s.fin]]];
+  const top = s.rows.slice(0, 8).map(r => TEAM[r.id].short).join(', ');
+  v.innerHTML = `
+    <div class="row"><button class="btn" id="simone">Simulate another</button></div>
+    <div class="champion" style="--c:${TEAM[champ].color}"><b>${TEAM[champ].name}</b><span>win the final against ${TEAM[runner].name}, ${Math.max(s.fin.fa, s.fin.sa)}–${Math.min(s.fin.fa, s.fin.sa)}${s.fin.pens ? ' (on penalties after a draw)' : s.fin.et ? ' after extra time' : ''}.</span></div>
+    <p class="lede">League phase top 8 in this run: ${top}. Scores in two-legged ties are aggregates.</p>
+    <div class="rounds-tabs">${rounds.map(([n], i) => `<button class="chip" data-rt="${i}" aria-pressed="${i === roundTab}">${n}</button>`).join('')}</div>
+    <div class="bracket">${rounds.map(([n, ties], i) => `<div class="round ${i === roundTab ? 'on' : ''}"><h3>${n}</h3>${ties.map(tieHtml).join('')}</div>`).join('')}</div>
+    <h2 style="margin-top:22px">Final league table in this run</h2>
+    <div class="scroll"><table><thead><tr><th class="team">Team</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>
+    <tbody>${s.rows.map((r, i) => `<tr class="zone" style="--z:${i < 8 ? 'var(--zone-top)' : i < 24 ? 'var(--zone-po)' : 'var(--zone-out)'}"><td class="team"><span class="pos">${i + 1}</span>${teamCell(r.id)}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf - r.ga > 0 ? '+' : ''}${r.gf - r.ga}</td><td><b>${r.pts}</b></td></tr>`).join('')}</tbody></table></div>`;
+  $('#simone').onclick = simOne;
+  v.querySelectorAll('[data-rt]').forEach(b => b.onclick = () => { roundTab = +b.dataset.rt; renderSeason(); });
+}
+function simOne() {
+  const S = strengths || computeStrengths(state, settings).s;
+  lastSeason = simSeason(S, buildTable(state.results), FIX.filter(f => !state.results[f.k]), settings, true);
+  renderSeason();
+}
+
+// ---------- Update view ----------
+function renderUpdate() {
+  const v = $('#v-update');
+  formDraft = formDraft || {...state.form};
+  const canSave = saveMode !== 'readonly';
+  const modeNote = saveMode === 'shared' ? 'Saving updates this page for everyone who has the link.'
+    : saveMode === 'readonly' ? 'Only the owner can save results and form. You can still change the model settings below.'
+    : 'Saving keeps your updates on this device and browser.';
+  const S = computeStrengths(state, settings);
+  v.innerHTML = `
+    <h2>Update</h2><p class="lede">${modeNote}${state.updated ? ` Last saved ${new Date(state.updated).toLocaleString()}.` : ''}</p>
+    ${canSave ? `
+    <div class="panel"><h3>Add results</h3>
+      <p class="help">Paste one result per line, home team first, like <b>Liverpool 2-1 Villarreal</b>. Copying the results list from a matchday round-up usually works as it is. A result you paste again replaces the old one.</p>
+      <textarea id="paste" placeholder="Fenerbahçe 1-0 Slavia Praha&#10;Paris Saint-Germain 2-2 Barcelona"></textarea>
+      <div class="row" style="margin-top:10px"><button class="btn ghost" id="check">Check results</button><button class="btn" id="saveRes" ${pending && pending.some(p => p.ok) ? '' : 'disabled'}>Save results</button></div>
+      ${pending ? `<ul class="preview">${pending.map(p => p.ok
+        ? `<li><span class="md">MD${p.f.md}</span>${TEAM[p.f.h].name} ${p.hg}–${p.ag} ${TEAM[p.f.a].name}${p.prev ? ` <span class="md">(replaces ${p.prev[0]}–${p.prev[1]})</span>` : ''}</li>`
+        : `<li class="bad">${p.line.replace(/</g, '&lt;')}: ${p.why}</li>`).join('')}</ul>` : ''}
+    </div>
+    <div class="panel"><h3>Domestic form</h3>
+      <p class="help">How each club is doing in its own league compared with its usual level. Each step moves its strength by ${FORM_STEP} points. A club winning its league as expected is Normal; a big club stuck mid-table is Below or Poor.</p>
+      <div class="forms">${TEAMS.map(t => `<div class="frow"><span>${teamCell(t.id)} <span class="strength">${Math.round(S.s[t.id])}</span></span>
+        <span class="seg" role="group" aria-label="${t.name} form">${FORM_LABELS.map(([val, lab]) => `<button data-team="${t.id}" data-val="${val}" aria-pressed="${(formDraft[t.id] || 0) === +val}">${lab}</button>`).join('')}</span></div>`).join('')}</div>
+      <div class="row" style="margin-top:12px"><button class="btn" id="saveForm">Save form</button><span class="strength">The number by each club is its current overall strength.</span></div>
+    </div>` : ''}
+    <div class="panel"><h3>Model settings</h3>
+      <p class="help">These only change the odds on this device. Re-run to see the effect.</p>
+      ${slider('clW', 'Weight of results in this competition', 0, 2, 0.1, x => x.toFixed(1) + '×', 'Zero ignores them; 2 trusts them twice as much.')}
+      ${slider('formW', 'Weight of domestic form', 0, 2, 0.1, x => x.toFixed(1) + '×', '')}
+      ${slider('hfa', 'Home advantage', 0, 120, 5, x => x + ' pts', 'About 55 matches typical European home edges.')}
+      ${slider('noise', 'Surprise factor', 0, 100, 5, x => x + ' pts', 'How much a club\'s true level can differ from its rating in any one season.')}
+      <div class="sl"><label for="sims">Seasons to simulate</label>
+        <select id="sims">${[2000, 10000, 25000, 50000].map(n => `<option value="${n}" ${settings.sims === n ? 'selected' : ''}>${n.toLocaleString()}</option>`).join('')}</select></div>
+      <div class="row"><button class="btn" id="rerun">Re-run simulations</button><button class="btn ghost" id="resetSet">Reset settings</button>
+      ${saveMode === 'local' && embedded.updated !== state.updated ? '<button class="btn ghost" id="resetData">Go back to built-in results</button>' : ''}</div>
+    </div>`;
+  v.querySelectorAll('input[type=range]').forEach(r => r.oninput = () => { settings[r.id] = +r.value; r.closest('.sl').querySelector('output').textContent = r.dataset.f ? SLFMT[r.id](+r.value) : r.value; });
+  $('#sims').onchange = e => settings.sims = +e.target.value;
+  $('#rerun').onclick = () => { saveSettings(); runSims(); toast('Re-running with new settings'); showView('odds'); };
+  $('#resetSet').onclick = () => { settings = {...DEFAULT_SET}; saveSettings(); renderUpdate(); runSims(); };
+  const rd = $('#resetData'); if (rd) rd.onclick = () => { try { localStorage.removeItem(LS_STATE); } catch (e) {} state = embedded; formDraft = null; afterChange(); };
+  if (!canSave) return;
+  $('#check').onclick = () => { pending = parseResults($('#paste').value, state.results); const keep = $('#paste').value; renderUpdate(); $('#paste').value = keep; };
+  $('#saveRes').onclick = () => {
+    const results = {...state.results};
+    pending.filter(p => p.ok).forEach(p => results[p.f.k] = [p.hg, p.ag]);
+    const n = pending.filter(p => p.ok).length; pending = null;
+    save({...state, results}, `${n} result${n === 1 ? '' : 's'} saved`);
+  };
+  v.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+    formDraft[b.dataset.team] = +b.dataset.val;
+    b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  });
+  $('#saveForm').onclick = () => { const form = {}; for (const k in formDraft) if (formDraft[k]) form[k] = formDraft[k]; save({...state, form}, 'Form saved'); };
+}
+const SLFMT = {};
+function slider(id, label, min, max, step, f, help) {
+  SLFMT[id] = f;
+  return `<div class="sl"><label for="${id}">${label}<output>${f(settings[id])}</output></label>
+    <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${settings[id]}" data-f="1">${help ? `<small>${help}</small>` : ''}</div>`;
+}
+function saveSettings() { try { localStorage.setItem(LS_SET, JSON.stringify(settings)); } catch (e) {} }
+
+// ---------- saving ----------
+async function save(next, msg) {
+  next.updated = new Date().toISOString();
+  if (saveMode === 'shared' && artifactApi) {
+    const json = JSON.stringify(next).replace(/</g, '\\u003c');
+    const html = TEMPLATE.replace(/(<script id="saved-state" type="application\/json">)[\s\S]*?(<\/script>)/, (m, a, b) => a + json + b);
+    try { await artifactApi.publish(html); toast(msg + '. Updating the page…'); return; }
+    catch (e) {
+      if (e && (e.code === 'not_writer' || e.code === 'not_granted')) { saveMode = 'readonly'; renderUpdate(); toast('Only the owner can save to this page'); return; }
+      if (e && e.code === 'conflict') return;
+      toast('Could not update the page, so this was saved on this device instead');
+    }
+  }
+  try { localStorage.setItem(LS_STATE, JSON.stringify(next)); } catch (e) {}
+  state = next; formDraft = null; toast(msg); afterChange();
+}
+function afterChange() { lastSeason = null; fixMd = null; renderTable(); renderUpdate(); runSims(); }
+
+// ---------- tabs ----------
+function showView(name) {
+  document.querySelectorAll('.tab').forEach(t => { const on = t.dataset.view === name; t.setAttribute('aria-selected', on); if (on) t.scrollIntoView({inline:'nearest', block:'nearest'}); });
+  document.querySelectorAll('.view').forEach(v => v.hidden = v.id !== 'v-' + name);
+  if (name === 'season') renderSeason();
+  if (name === 'update') renderUpdate();
+  if (name === 'fixtures') renderFixtures();
+  window.scrollTo({top: 0});
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => showView(t.dataset.view));
+
+// ---------- start ----------
+renderTable(); renderOdds(); runSims();
+(async () => {
+  if (!(window.claude && window.claude.use)) return;          // hosted elsewhere: save on this device
+  try {
+    const [art, user] = await Promise.all([window.claude.use('artifact'), window.claude.use('user')]);
+    if (art) {
+      artifactApi = art;
+      let canEdit = true;
+      try { if (user) canEdit = await user.canEdit(); } catch (e) {}
+      saveMode = canEdit ? 'shared' : 'readonly';
+    }
+  } catch (e) {}
+  if (!document.getElementById('v-update').hidden) renderUpdate();
+})();
+
+</script>
+</body>
+</html>
